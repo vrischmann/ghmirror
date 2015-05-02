@@ -17,6 +17,8 @@ If not check out the [releases](https://github.com/vrischmann/ghmirror/releases)
 How to run it
 -------------
 
+First make sure you have the git binary accessible from your PATH: ghmirror depends on it.
+
 You need to set these environment variables one way or another:
 
   * PORT             the listen address port

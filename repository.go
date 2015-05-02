@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"io"
+	"os"
 )
 
 type Repository struct {
@@ -22,12 +23,17 @@ func NewRepository(id int64, name, localPath, cloneURL string) *Repository {
 	}
 }
 
-func (r *Repository) Pull() error {
-	return gitPull(r.LocalPath)
-}
+func (r *Repository) Update() error {
+	_, err := os.Stat(r.LocalPath)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
 
-func (r *Repository) Clone() error {
-	return gitClone(r.CloneURL, r.LocalPath)
+	if os.IsNotExist(err) {
+		return gitClone(r.CloneURL, r.LocalPath)
+	}
+
+	return gitPull(r.LocalPath)
 }
 
 func (r *Repository) Read(p []byte) (n int, err error) {

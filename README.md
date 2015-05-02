@@ -30,6 +30,8 @@ Now add your webhook through the GitHub interface and point it to your server. T
 
 Note: the first time you add the webhook, GitHub will send a ping event: ghmirror does nothing in that case. Right now ghmirror only handles push events.
 
+Note bis: right now it only takes the public URL, it will be changed in the future.
+
 Future work
 -----------
 
@@ -37,6 +39,7 @@ Future work
    * fetch all repositories regularly
    * create the webhook if not present
  * handle all webhook events maybe ?
+ * use the private clone URL
 
 License
 -------

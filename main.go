@@ -68,6 +68,7 @@ func hookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var repo *Repository
 	if !ok {
 		localPath := filepath.Join(conf.RepositoriesPath, hb.Repository.FullName)
 		repo = NewRepository(
@@ -82,25 +83,19 @@ func hookHandler(w http.ResponseWriter, r *http.Request) {
 			writeInternalServerError(w)
 			return
 		}
-
-		if err := repo.Clone(); err != nil {
-			log.Printf("error while cloning repository. err=%v", err)
-			writeInternalServerError(w)
-			return
-		}
 	} else {
-		repo, err := ds.GetByID(hb.Repository.Id)
+		repo, err = ds.GetByID(hb.Repository.Id)
 		if err != nil {
 			log.Printf("error while getting repository from the datastore. err=%v", err)
 			writeInternalServerError(w)
 			return
 		}
+	}
 
-		if err := repo.Pull(); err != nil {
-			log.Printf("error while pulling repository. err=%v", err)
-			writeInternalServerError(w)
-			return
-		}
+	if err := repo.Update(); err != nil {
+		log.Printf("error while cloning repository. err=%v", err)
+		writeInternalServerError(w)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

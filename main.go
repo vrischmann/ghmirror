@@ -125,7 +125,7 @@ func bufferizeBody(w http.ResponseWriter, r *http.Request, next http.HandlerFunc
 	next(w, r)
 }
 
-func hookValidation(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+func hookAuthentication(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	rewind(r.Body)
 
 	sign := r.Header.Get("X-Hub-Signature")
@@ -153,6 +153,17 @@ func hookValidation(w http.ResponseWriter, r *http.Request, next http.HandlerFun
 	next(w, r)
 }
 
+func eventTypeValidation(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	et := r.Header.Get("X-GitHub-Event")
+	if et != "push" {
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, "OK")
+		return
+	}
+
+	next(w, r)
+}
+
 func main() {
 	err := envconfig.Init(&conf)
 	if err != nil {
@@ -169,7 +180,8 @@ func main() {
 
 	n := negroni.Classic()
 	n.UseFunc(bufferizeBody)
-	n.UseFunc(hookValidation)
+	n.UseFunc(hookAuthentication)
+	n.UseFunc(eventTypeValidation)
 	n.UseHandler(mux)
 	n.Run(fmt.Sprintf(":%d", conf.Port))
 }

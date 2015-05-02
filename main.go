@@ -70,7 +70,13 @@ func hookHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !ok {
 		localPath := filepath.Join(conf.RepositoriesPath, hb.Repository.FullName)
-		repo := NewRepository(hb.Repository.Id, hb.Repository.Name, localPath, hb.Repository.SSHURL)
+		repo = NewRepository(
+			hb.Repository.Id,
+			hb.Repository.Name,
+			localPath,
+			hb.Repository.CloneURL,
+		)
+
 		if err := ds.AddRepository(repo); err != nil {
 			log.Printf("error while adding repository to the datastore. err=%v", err)
 			writeInternalServerError(w)

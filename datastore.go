@@ -100,6 +100,9 @@ func (s *boltDataStore) AddRepository(repo *Repository) error {
 
 		var buf bytes.Buffer
 		_, err = io.Copy(&buf, repo)
+		if err != nil {
+			return err
+		}
 
 		return bucket.Put(EncodeID(repo.ID), buf.Bytes())
 	})

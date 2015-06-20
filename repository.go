@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"io"
+	"log"
 	"os"
 )
 
@@ -12,6 +13,7 @@ type Repository struct {
 	ID        int64
 	LocalPath string
 	CloneURL  string
+	HookID    int64
 }
 
 func NewRepository(id int64, name, localPath, cloneURL string) *Repository {
@@ -30,8 +32,11 @@ func (r *Repository) Update() error {
 	}
 
 	if os.IsNotExist(err) {
+		log.Printf("git clone from %s to %s", r.CloneURL, r.LocalPath)
 		return gitClone(r.CloneURL, r.LocalPath)
 	}
+
+	log.Printf("git pull in %s", r.LocalPath)
 
 	return gitPull(r.LocalPath)
 }
@@ -48,7 +53,9 @@ func (r *Repository) ReadFrom(rd io.Reader) (n int64, err error) {
 	var i int64
 	br := bufio.NewReader(rd)
 
-	binary.Read(br, binary.BigEndian, &r.ID)
+	if err = binary.Read(br, binary.BigEndian, &r.ID); err != nil {
+		return
+	}
 	n += 8
 
 	if i, err = readString(br, &r.Name); err != nil {
@@ -65,6 +72,11 @@ func (r *Repository) ReadFrom(rd io.Reader) (n int64, err error) {
 		return
 	}
 	n += i
+
+	if err = binary.Read(br, binary.BigEndian, &r.HookID); err != nil {
+		return
+	}
+	n += 8
 
 	return
 }
@@ -87,6 +99,9 @@ func (r *Repository) WriteTo(w io.Writer) (n int64, err error) {
 		return
 	}
 	bw.WriteString(r.CloneURL)
+	if err = binary.Write(bw, binary.BigEndian, r.HookID); err != nil {
+		return
+	}
 
 	return int64(bw.Buffered()), bw.Flush()
 }

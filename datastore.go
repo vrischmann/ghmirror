@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"io"
+	"sync"
 
 	"github.com/boltdb/bolt"
 )
@@ -15,8 +16,11 @@ var (
 	repositoriesBucket = []byte(repositoriesBucket_)
 )
 
+// DataStore is the interface used to store metadata about repositories.
 type DataStore interface {
 	io.Closer
+	Lock()
+	Unlock()
 	Repositories() (Repositories, error)
 	GetByID(id int64) (*Repository, error)
 	HasRepository(id int64) (bool, error)
@@ -25,6 +29,7 @@ type DataStore interface {
 
 type boltDataStore struct {
 	db *bolt.DB
+	mu sync.Mutex
 }
 
 func newBoltDataStore(path string) (DataStore, error) {
@@ -38,6 +43,14 @@ func newBoltDataStore(path string) (DataStore, error) {
 
 func (s *boltDataStore) Close() error {
 	return s.db.Close()
+}
+
+func (s *boltDataStore) Lock() {
+	s.mu.Lock()
+}
+
+func (s *boltDataStore) Unlock() {
+	s.mu.Unlock()
 }
 
 func (s *boltDataStore) Repositories() (Repositories, error) {

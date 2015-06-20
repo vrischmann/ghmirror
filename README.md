@@ -21,23 +21,31 @@ First make sure you have the git binary accessible from your PATH: ghmirror depe
 
 You need to set these environment variables one way or another:
 
-  * PORT             the listen address port
-  * SECRET           the secret used by GitHub for the Webhook
-  * REPOSITORIESPATH the path where ghmirror will clone the repositories
-  * DATABASEPATH     the path of the ghmirror database file
+  * PORT                      the listen address port
+  * SECRET                    the secret used by GitHub for the Webhook
+  * PERSONALACCESSTOKEN       the token used to authenticate to the GitHub API
+  * POLLFREQUENCY             the frequency at which to poll the repositories list (written as 60s, 1m, 1h, etc)
+  * WEBHOOK\_ENDPOINT         the webhook endpoint URL to use when creating a webhook
+  * WEBHOOK\_VALIDOWNERLOGINS the list of valid owners when creating a webhook. Put your username in here.
+  * REPOSITORIESPATH          the path where ghmirror will clone the repositories
+  * DATABASEPATH              the path of the ghmirror database file
 
-Now add your webhook through the GitHub interface and point it to your server. The route you need to use is _/hook_
+ghmirror will regularly poll the GitHub API for the list of repositories, iterate through each one of them and do the following:
 
-Note: the first time you add the webhook, GitHub will send a ping event: ghmirror does nothing in that case. Right now ghmirror only handles push events.
+  * if it's already in the database, it assumes the webhook has already been installed
+    * triggers a git pull
+  * otherwise, it checks that the webhook exists
+    * if it does not, it creates it
+  * then it adds the repository in the database
+    * triggers a git clone
 
-Note bis: right now it only takes the public URL, it will be changed in the future.
+Right now there is no way to control which repositories to add the webhook to other than the basic owner login filter.
+
+If there's a need, I will add more ways to filter in the future.
 
 Future work
 -----------
 
- * automatically creates webhooks via the GitHub API
-   * fetch all repositories regularly
-   * create the webhook if not present
  * handle all webhook events maybe ?
  * use the private clone URL
 

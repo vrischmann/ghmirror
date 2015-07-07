@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	repositoriesBucket_ = "repositories"
+	repositoriesBucketName = "repositories"
 )
 
 var (
-	repositoriesBucket = []byte(repositoriesBucket_)
+	repositoriesBucket = []byte(repositoriesBucketName)
 )
 
 // DataStore is the interface used to store metadata about repositories.

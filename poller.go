@@ -79,12 +79,12 @@ func (p *poller) updateRepositories() {
 					if !ok {
 						log.Printf("webhook does not exists for %d, %s", id, *repo.FullName)
 						log.Printf("creating webhook for repository %d, %s", id, *repo.FullName)
-						hookId, err := p.createWebHook(*repo.Owner.Login, *repo.Name, p.gh)
+						hookID, err := p.createWebHook(*repo.Owner.Login, *repo.Name, p.gh)
 						if err != nil {
 							log.Printf("error while creating webhook. err=%v", err)
 							return
 						}
-						r.HookID = hookId
+						r.HookID = hookID
 					} else {
 						log.Printf("webhook already exists for %d, %s", id, *repo.FullName)
 					}

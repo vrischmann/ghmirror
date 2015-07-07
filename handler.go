@@ -31,7 +31,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.ds.Lock()
 	defer h.ds.Unlock()
 
-	ok, err := h.ds.HasRepository(hb.Repository.Id)
+	ok, err := h.ds.HasRepository(hb.Repository.ID)
 	if err != nil {
 		log.Printf("error while checking for repository in the datastore. err=%v", err)
 		writeInternalServerError(w)
@@ -41,11 +41,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var repo *Repository
 	{
 		if !ok {
-			log.Printf("repository %d does not exist yet, adding it", hb.Repository.Id)
+			log.Printf("repository %d does not exist yet, adding it", hb.Repository.ID)
 
 			localPath := filepath.Join(conf.RepositoriesPath, hb.Repository.FullName)
 			repo = NewRepository(
-				hb.Repository.Id,
+				hb.Repository.ID,
 				hb.Repository.Name,
 				localPath,
 				hb.Repository.CloneURL,
@@ -57,7 +57,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			repo, err = h.ds.GetByID(hb.Repository.Id)
+			repo, err = h.ds.GetByID(hb.Repository.ID)
 			if err != nil {
 				log.Printf("error while getting repository from the datastore. err=%v", err)
 				writeInternalServerError(w)

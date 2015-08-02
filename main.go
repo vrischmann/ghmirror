@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -13,8 +13,21 @@ import (
 	"github.com/vrischmann/envconfig"
 )
 
+type networkAddress string
+
+func (n *networkAddress) Unmarshal(s string) error {
+	_, _, err := net.SplitHostPort(s)
+	if err != nil {
+		return err
+	}
+
+	*n = networkAddress(s)
+
+	return nil
+}
+
 var conf struct {
-	Port                int
+	Address             networkAddress
 	Secret              string
 	PersonalAccessToken string
 	PollFrequency       time.Duration
@@ -67,6 +80,6 @@ func main() {
 		n.UseFunc(hookAuthentication)
 		n.UseFunc(eventTypeValidation)
 		n.UseHandler(mux)
-		n.Run(fmt.Sprintf(":%d", conf.Port))
+		n.Run(string(conf.Address))
 	}
 }

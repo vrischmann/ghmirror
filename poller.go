@@ -45,6 +45,11 @@ func (p *poller) updateRepositories() {
 	for _, repo := range repos {
 		id := int64(*repo.ID)
 
+		if repo.Private != nil && *repo.Private {
+			log.Printf("ignoring repo %s at %s because it's private", *repo.Name, *repo.CloneURL)
+			continue
+		}
+
 		ok, err := p.ds.HasRepository(id)
 		if err != nil {
 			log.Printf("error while checking for repository in the datastore. err=%v", err)

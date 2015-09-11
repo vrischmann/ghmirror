@@ -46,8 +46,7 @@ If there's a need, I will add more ways to filter in the future.
 Future work
 -----------
 
- * handle all webhook events maybe ?
- * use the private clone URL
+ * handle private repositories
 
 License
 -------

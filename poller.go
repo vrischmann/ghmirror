@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"path/filepath"
 	"time"
@@ -32,16 +33,48 @@ func (p *poller) run() {
 }
 
 func (p *poller) updateRepositories() {
-	repos, _, err := p.gh.Repositories.List("", nil)
+	count := 0
+	for page := 0; ; {
+		repos, nextPage, err := p.updateRepositoriesForPage(page)
+		if err != nil {
+			log.Printf("%v", err)
+			return
+		}
+
+		count += repos
+
+		if nextPage == 0 {
+			break
+		}
+
+		page = nextPage
+	}
+
+	log.Printf("%d repositories updated", count)
+}
+
+func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
+	var opts github.RepositoryListOptions
+	opts.ListOptions.Page = page
+
+	repos, resp, err := p.gh.Repositories.List("", &opts)
 	if err != nil {
-		log.Printf("unable to get user repositories. err=%v", err)
-		return
+		return 0, 0, fmt.Errorf("unable to get user repositories. err=%v", err)
 	}
 
 	// Obtain the datastore lock
 	p.ds.Lock()
 	defer p.ds.Unlock()
 
+	log.Printf("got %d repositories for page %d", len(repos), page)
+
+	nextPage := resp.NextPage
+
+	if len(repos) == 0 {
+		return 0, 0, nil
+	}
+
+	count := 0
 	for _, repo := range repos {
 		id := int64(*repo.ID)
 
@@ -50,10 +83,11 @@ func (p *poller) updateRepositories() {
 			continue
 		}
 
+		count++
+
 		ok, err := p.ds.HasRepository(id)
 		if err != nil {
-			log.Printf("error while checking for repository in the datastore. err=%v", err)
-			return
+			return 0, 0, fmt.Errorf("error while checking for repository in the datastore. err=%v", err)
 		}
 
 		var r *Repository
@@ -77,17 +111,16 @@ func (p *poller) updateRepositories() {
 
 					ok, err := p.webHookExist(login, *repo.Name, p.gh)
 					if err != nil {
-						log.Printf("error while checking the webhook exist. err=%v", err)
-						return
+						return 0, 0, fmt.Errorf("error while checking the webhook exist. err=%v", err)
 					}
 
 					if !ok {
 						log.Printf("webhook does not exists for %d, %s", id, *repo.FullName)
 						log.Printf("creating webhook for repository %d, %s", id, *repo.FullName)
+
 						hookID, err := p.createWebHook(*repo.Owner.Login, *repo.Name, p.gh)
 						if err != nil {
-							log.Printf("error while creating webhook. err=%v", err)
-							return
+							return 0, 0, fmt.Errorf("error while creating webhook. err=%v", err)
 						}
 						r.HookID = hookID
 					} else {
@@ -96,14 +129,12 @@ func (p *poller) updateRepositories() {
 				}
 
 				if err := p.ds.AddRepository(r); err != nil {
-					log.Printf("error while adding repository to the datastore. err=%v", err)
-					return
+					return 0, 0, fmt.Errorf("error while adding repository to the datastore. err=%v", err)
 				}
 			} else {
 				r, err = p.ds.GetByID(id)
 				if err != nil {
-					log.Printf("error while getting repository from the datastore. err=%v", err)
-					return
+					return 0, 0, fmt.Errorf("error while getting repository from the datastore. err=%v", err)
 				}
 			}
 		}
@@ -111,14 +142,13 @@ func (p *poller) updateRepositories() {
 		log.Printf("updating repo %d, %s", r.ID, *repo.FullName)
 
 		if err := r.Update(); err != nil {
-			log.Printf("error while cloning repository. err=%v", err)
-			return
+			return 0, 0, fmt.Errorf("error while cloning repository. err=%v", err)
 		}
 
 		log.Printf("repo %d, %s updated", r.ID, *repo.FullName)
 	}
 
-	log.Println("repositories updated")
+	return count, nextPage, nil
 }
 
 func (p *poller) webHookExist(owner, repo string, gh *github.Client) (bool, error) {

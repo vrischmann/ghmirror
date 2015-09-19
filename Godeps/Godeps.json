@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/vrischmann/ghmirror",
-	"GoVersion": "devel",
+	"GoVersion": "go1.5",
 	"Packages": [
 		"./..."
 	],
@@ -16,26 +16,12 @@
 			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
 		},
 		{
-			"ImportPath": "github.com/golang/protobuf/proto",
-			"Rev": "ab974be44dc3b7b8a1fb306fb32fe9b9f3864b3d"
-		},
-		{
 			"ImportPath": "github.com/google/go-github/github",
 			"Rev": "fccd5bb66f985db0a0d150342ca0a9529a23488a"
 		},
 		{
 			"ImportPath": "github.com/google/go-querystring/query",
 			"Rev": "547ef5ac979778feb2f760cdb5f4eae1a2207b86"
-		},
-		{
-			"ImportPath": "github.com/stretchr/testify/assert",
-			"Comment": "v1.0-17-g089c718",
-			"Rev": "089c7181b8c728499929ff09b62d3fdd8df8adff"
-		},
-		{
-			"ImportPath": "github.com/stretchr/testify/require",
-			"Comment": "v1.0-17-g089c718",
-			"Rev": "089c7181b8c728499929ff09b62d3fdd8df8adff"
 		},
 		{
 			"ImportPath": "github.com/vrischmann/envconfig",
@@ -48,18 +34,6 @@
 		{
 			"ImportPath": "golang.org/x/oauth2",
 			"Rev": "b5adcc2dcdf009d0391547edc6ecbaff889f5bb9"
-		},
-		{
-			"ImportPath": "google.golang.org/appengine",
-			"Rev": "afb3df0168a9872d9226386a6734249784051f6d"
-		},
-		{
-			"ImportPath": "google.golang.org/cloud/compute/metadata",
-			"Rev": "e34a32f9b0ecbc0784865fb2d47f3818c09521d4"
-		},
-		{
-			"ImportPath": "google.golang.org/cloud/internal",
-			"Rev": "e34a32f9b0ecbc0784865fb2d47f3818c09521d4"
 		}
 	]
 }

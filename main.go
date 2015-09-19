@@ -39,7 +39,14 @@ var conf struct {
 	DatabasePath     string
 }
 
+var (
+	version string
+	commit  string
+)
+
 func main() {
+	log.Printf("ghmirror %s-%s", version, commit)
+
 	var ds DataStore
 	var gh *github.Client
 	{

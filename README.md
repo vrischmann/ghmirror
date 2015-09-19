@@ -21,14 +21,14 @@ First make sure you have the git binary accessible from your PATH: ghmirror depe
 
 You need to set these environment variables one way or another:
 
-  * PORT                      the listen address port
-  * SECRET                    the secret used by GitHub for the Webhook
-  * PERSONALACCESSTOKEN       the token used to authenticate to the GitHub API
-  * POLLFREQUENCY             the frequency at which to poll the repositories list (written as 60s, 1m, 1h, etc)
-  * WEBHOOK\_ENDPOINT         the webhook endpoint URL to use when creating a webhook
-  * WEBHOOK\_VALIDOWNERLOGINS the list of valid owners when creating a webhook. Put your username in here.
-  * REPOSITORIESPATH          the path where ghmirror will clone the repositories
-  * DATABASEPATH              the path of the ghmirror database file
+  * PORT                          the listen address port
+  * SECRET                        the secret used by GitHub for the Webhook
+  * PERSONAL\_ACCESS\_TOKEN       the token used to authenticate to the GitHub API
+  * POLL\_FREQUENCY               the frequency at which to poll the repositories list (written as 60s, 1m, 1h, etc)
+  * WEBHOOK\_ENDPOINT             the webhook endpoint URL to use when creating a webhook
+  * WEBHOOK\_VALID\_OWNER\_LOGINS the list of valid owners when creating a webhook. Put your username in here.
+  * REPOSITORIES\_PATH            the path where ghmirror will clone the repositories
+  * DATABASE\_PATH                the path of the ghmirror database file
 
 ghmirror will regularly poll the GitHub API for the list of repositories, iterate through each one of them and do the following:
 

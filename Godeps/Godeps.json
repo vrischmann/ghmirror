@@ -2,13 +2,13 @@
 	"ImportPath": "github.com/vrischmann/ghmirror",
 	"GoVersion": "go1.5",
 	"Packages": [
-		"./..."
+		"github.com/vrischmann/ghmirror/..."
 	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/boltdb/bolt",
-			"Comment": "v1.0-111-g04a3e85",
-			"Rev": "04a3e85793043e76d41164037d0d7f9d53eecae3"
+			"Comment": "v1.0-125-g033d4ec",
+			"Rev": "033d4ec028192f38aef67ae47bd7b89f343145b5"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/negroni",
@@ -16,24 +16,50 @@
 			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
 		},
 		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "535a10468679b4cf155f6a7afdf53b554633fc09"
+		},
+		{
 			"ImportPath": "github.com/google/go-github/github",
-			"Rev": "fccd5bb66f985db0a0d150342ca0a9529a23488a"
+			"Rev": "7277108aa3e8823e0e028f6c74aea2f4ce4a1b5a"
 		},
 		{
 			"ImportPath": "github.com/google/go-querystring/query",
 			"Rev": "547ef5ac979778feb2f760cdb5f4eae1a2207b86"
 		},
 		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.0-40-g7c2b1e5",
+			"Rev": "7c2b1e5640dcf2631213ca962d892bffa1e08860"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/require",
+			"Comment": "v1.0-40-g7c2b1e5",
+			"Rev": "7c2b1e5640dcf2631213ca962d892bffa1e08860"
+		},
+		{
 			"ImportPath": "github.com/vrischmann/envconfig",
-			"Rev": "14840c85815caf986208a534f8fc36695e3e53fb"
+			"Rev": "e4f615d158ed2bea636ca576237d177becd0207b"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
-			"Rev": "10576091dc82c9c109dddfb5ed77bdbbc87a9af8"
+			"Rev": "ea47fc708ee3e20177f3ca3716217c4ab75942cb"
 		},
 		{
 			"ImportPath": "golang.org/x/oauth2",
-			"Rev": "b5adcc2dcdf009d0391547edc6ecbaff889f5bb9"
+			"Rev": "ad0128250e8fba646a92ca9129716e523d63ef9f"
+		},
+		{
+			"ImportPath": "google.golang.org/appengine",
+			"Rev": "302bbefe9d95820bb8393c962e76a1417f8278d8"
+		},
+		{
+			"ImportPath": "google.golang.org/cloud/compute/metadata",
+			"Rev": "a128c777c40402d8b287fcd0a614f80c4ee4f7b5"
+		},
+		{
+			"ImportPath": "google.golang.org/cloud/internal",
+			"Rev": "a128c777c40402d8b287fcd0a614f80c4ee4f7b5"
 		}
 	]
 }

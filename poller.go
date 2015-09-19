@@ -104,7 +104,7 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 					*repo.CloneURL,
 				)
 
-				if stringSliceContains(conf.WebHook.ValidOwnerLogins, *repo.Owner.Login) {
+				if stringSliceContains(conf.Webhook.ValidOwnerLogins, *repo.Owner.Login) {
 					login := *repo.Owner.Login
 
 					log.Printf("check the webhook exist")
@@ -169,7 +169,7 @@ func (p *poller) webHookExist(owner, repo string, gh *github.Client) (bool, erro
 			continue
 		}
 
-		if v2 == conf.WebHook.Endpoint {
+		if v2 == conf.Webhook.Endpoint {
 			exist = true
 		}
 	}
@@ -185,7 +185,7 @@ func (p *poller) createWebHook(owner, repo string, gh *github.Client) (int64, er
 		Name:   &name,
 		Events: []string{"push"},
 		Config: map[string]interface{}{
-			"url":          conf.WebHook.Endpoint,
+			"url":          conf.Webhook.Endpoint,
 			"content_type": "json",
 			"secret":       conf.Secret,
 		},

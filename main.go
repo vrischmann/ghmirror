@@ -31,7 +31,7 @@ var conf struct {
 	Secret              string
 	PersonalAccessToken string
 	PollFrequency       time.Duration
-	WebHook             struct {
+	Webhook             struct {
 		Endpoint         string
 		ValidOwnerLogins []string
 	}

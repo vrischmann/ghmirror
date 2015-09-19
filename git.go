@@ -19,6 +19,13 @@ func gitClone(url, dest string) error {
 
 func gitPull(dir string) error {
 	var buf bytes.Buffer
+
+	// When force pushing it will mess up the local directory sometimes, so reset everytime.
+	err := runGitCommand(nil, &buf, dir, "reset", "--hard")
+	if err != nil {
+		return errors.New(buf.String())
+	}
+
 	err := runGitCommand(nil, &buf, dir, "pull")
 	if err != nil {
 		return errors.New(buf.String())

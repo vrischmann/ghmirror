@@ -142,7 +142,7 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 		log.Printf("updating repo %d, %s", r.ID, *repo.FullName)
 
 		if err := r.Update(); err != nil {
-			return 0, 0, fmt.Errorf("error while cloning repository. err=%v", err)
+			log.Printf("error while updating repository %d, %s. err=%v", r.ID, *repo.FullName, err)
 		}
 
 		log.Printf("repo %d, %s updated", r.ID, *repo.FullName)

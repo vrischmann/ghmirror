@@ -26,7 +26,7 @@ func gitPull(dir string) error {
 		return errors.New(buf.String())
 	}
 
-	err = runGitCommand(nil, &buf, dir, "pull")
+	err = runGitCommand(nil, &buf, dir, "pull", "--rebase")
 	if err != nil {
 		return errors.New(buf.String())
 	}

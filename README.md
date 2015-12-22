@@ -43,11 +43,6 @@ Right now there is no way to control which repositories to add the webhook to ot
 
 If there's a need, I will add more ways to filter in the future.
 
-Future work
------------
-
- * handle private repositories
-
 License
 -------
 

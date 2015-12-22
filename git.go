@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os/exec"
 )
@@ -20,15 +21,20 @@ func gitClone(url, dest string) error {
 func gitPull(dir string) error {
 	var buf bytes.Buffer
 
-	// When force pushing it will mess up the local directory sometimes, so reset everytime.
-	err := runGitCommand(nil, &buf, dir, "reset", "--hard")
+	err := runGitCommand(nil, &buf, dir, "checkout", "master")
 	if err != nil {
-		return errors.New(buf.String())
+		return fmt.Errorf(`running command "git checkout master", err=%v`, buf.String())
+	}
+
+	// When force pushing it will mess up the local directory sometimes, so reset everytime.
+	err = runGitCommand(nil, &buf, dir, "reset", "--hard")
+	if err != nil {
+		return fmt.Errorf(`running command "git reset --hard", err=%v`, buf.String())
 	}
 
 	err = runGitCommand(nil, &buf, dir, "pull", "--rebase")
 	if err != nil {
-		return errors.New(buf.String())
+		return fmt.Errorf(`running command "git pull --rebase", err=%v`, buf.String())
 	}
 
 	return nil

@@ -26,11 +26,15 @@ func gitPull(dir string) error {
 		return fmt.Errorf(`running command "git checkout master", err=%v`, buf.String())
 	}
 
+	buf.Reset()
+
 	// When force pushing it will mess up the local directory sometimes, so reset everytime.
 	err = runGitCommand(nil, &buf, dir, "reset", "--hard")
 	if err != nil {
 		return fmt.Errorf(`running command "git reset --hard", err=%v`, buf.String())
 	}
+
+	buf.Reset()
 
 	err = runGitCommand(nil, &buf, dir, "pull", "--rebase")
 	if err != nil {

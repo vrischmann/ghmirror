@@ -78,12 +78,11 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 	for _, repo := range repos {
 		id := int64(*repo.ID)
 
-		if repo.Private != nil && *repo.Private {
-			log.Printf("ignoring repo %s at %s because it's private", *repo.Name, *repo.CloneURL)
-			continue
-		}
+		cloneURL := *repo.CloneURL
 
-		count++
+		if repo.Private != nil && *repo.Private {
+			cloneURL = *repo.SSHURL
+		}
 
 		ok, err := p.ds.HasRepository(id)
 		if err != nil {
@@ -101,7 +100,7 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 					id,
 					*repo.Name,
 					localPath,
-					*repo.CloneURL,
+					cloneURL,
 				)
 
 				if stringSliceContains(conf.Webhook.ValidOwnerLogins, *repo.Owner.Login) {
@@ -143,7 +142,10 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 
 		if err := r.Update(); err != nil {
 			log.Printf("error while updating repository %d, %s. err=%v", r.ID, *repo.FullName, err)
+			continue
 		}
+
+		count++
 
 		log.Printf("repo %d, %s updated", r.ID, *repo.FullName)
 	}

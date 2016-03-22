@@ -1,9 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -11,23 +12,31 @@ import (
 	"github.com/codegangsta/negroni"
 	"github.com/google/go-github/github"
 	"github.com/vrischmann/envconfig"
+	"github.com/vrischmann/flagutil"
 )
 
-type networkAddress string
+type dataStoreType int
 
-func (n *networkAddress) Unmarshal(s string) error {
-	_, _, err := net.SplitHostPort(s)
-	if err != nil {
-		return err
+func (t *dataStoreType) Unmarshal(s string) error {
+	switch strings.ToLower(s) {
+	case "bolt":
+		*t = boltDataStoreType
+	case "postgresql":
+		*t = postgresqlDataStoreType
+	default:
+		return fmt.Errorf("unknown data store type '%s'", s)
 	}
-
-	*n = networkAddress(s)
 
 	return nil
 }
 
+const (
+	boltDataStoreType dataStoreType = iota + 1
+	postgresqlDataStoreType
+)
+
 var conf struct {
-	Address             networkAddress
+	Address             flagutil.NetworkAddresses
 	Secret              string
 	PersonalAccessToken string
 	PollFrequency       time.Duration
@@ -87,6 +96,6 @@ func main() {
 		n.UseFunc(hookAuthentication)
 		n.UseFunc(eventTypeValidation)
 		n.UseHandler(mux)
-		n.Run(string(conf.Address))
+		n.Run(string(conf.Address.StringSlice()[0]))
 	}
 }

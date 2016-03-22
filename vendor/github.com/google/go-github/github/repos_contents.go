@@ -43,7 +43,7 @@ type RepositoryContentResponse struct {
 // RepositoryContentFileOptions specifies optional parameters for CreateFile, UpdateFile, and DeleteFile.
 type RepositoryContentFileOptions struct {
 	Message   *string       `json:"message,omitempty"`
-	Content   []byte        `json:"content,omitempty"`
+	Content   []byte        `json:"content,omitempty"` // unencoded
 	SHA       *string       `json:"sha,omitempty"`
 	Branch    *string       `json:"branch,omitempty"`
 	Author    *CommitAuthor `json:"author,omitempty"`
@@ -127,9 +127,9 @@ func (s *RepositoriesService) DownloadContents(owner, repo, filepath string, opt
 // value and the other will be nil.
 //
 // GitHub API docs: http://developer.github.com/v3/repos/contents/#get-contents
-func (s *RepositoriesService) GetContents(owner, repo, path string, opt *RepositoryContentGetOptions) (fileContent *RepositoryContent,
-	directoryContent []*RepositoryContent, resp *Response, err error) {
-	u := fmt.Sprintf("repos/%s/%s/contents/%s", owner, repo, path)
+func (s *RepositoriesService) GetContents(owner, repo, path string, opt *RepositoryContentGetOptions) (fileContent *RepositoryContent, directoryContent []*RepositoryContent, resp *Response, err error) {
+	escapedPath := (&url.URL{Path: path}).String()
+	u := fmt.Sprintf("repos/%s/%s/contents/%s", owner, repo, escapedPath)
 	u, err = addOptions(u, opt)
 	if err != nil {
 		return nil, nil, nil, err

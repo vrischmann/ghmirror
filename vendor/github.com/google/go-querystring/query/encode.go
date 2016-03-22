@@ -138,7 +138,7 @@ func reflectValue(values url.Values, val reflect.Value, scope string) error {
 	typ := val.Type()
 	for i := 0; i < typ.NumField(); i++ {
 		sf := typ.Field(i)
-		if sf.PkgPath != "" { // unexported
+		if sf.PkgPath != "" && !sf.Anonymous { // unexported
 			continue
 		}
 
@@ -167,6 +167,10 @@ func reflectValue(values url.Values, val reflect.Value, scope string) error {
 		}
 
 		if sv.Type().Implements(encoderType) {
+			if !reflect.Indirect(sv).IsValid() {
+				sv = reflect.New(sv.Type().Elem())
+			}
+
 			m := sv.Interface().(Encoder)
 			if err := m.EncodeValues(name, &values); err != nil {
 				return err

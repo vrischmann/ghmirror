@@ -21,8 +21,8 @@ type boltDataStore struct {
 	mu sync.Mutex
 }
 
-func newBoltDataStore(path string) (DataStore, error) {
-	db, err := bolt.Open(path, 0600, nil)
+func newBoltDataStore(conf *boltConf) (DataStore, error) {
+	db, err := bolt.Open(conf.DatabasePath, 0600, nil)
 	if err != nil {
 		return nil, err
 	}

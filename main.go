@@ -21,8 +21,8 @@ func (t *dataStoreType) Unmarshal(s string) error {
 	switch strings.ToLower(s) {
 	case "bolt":
 		*t = boltDataStoreType
-	case "postgresql":
-		*t = postgresqlDataStoreType
+	case "postgres":
+		*t = postgresDataStoreType
 	default:
 		return fmt.Errorf("unknown data store type '%s'", s)
 	}
@@ -32,8 +32,20 @@ func (t *dataStoreType) Unmarshal(s string) error {
 
 const (
 	boltDataStoreType dataStoreType = iota + 1
-	postgresqlDataStoreType
+	postgresDataStoreType
 )
+
+type boltConf struct {
+	DatabasePath string
+}
+
+type postgresConf struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+	Dbname   string
+}
 
 var conf struct {
 	Address             flagutil.NetworkAddresses
@@ -44,8 +56,13 @@ var conf struct {
 		Endpoint         string
 		ValidOwnerLogins []string
 	}
+
 	RepositoriesPath string
-	DatabasePath     string
+
+	DataStoreType dataStoreType
+
+	Bolt     boltConf     `envconfig:"optional"`
+	Postgres postgresConf `envconfig:"optional"`
 }
 
 var (
@@ -56,46 +73,53 @@ var (
 func main() {
 	log.Printf("ghmirror %s-%s", version, commit)
 
-	var ds DataStore
-	var gh *github.Client
-	{
-		err := envconfig.Init(&conf)
-		if err != nil {
-			log.Fatalln(err)
-		}
+	var (
+		ds DataStore
+		gh *github.Client
+	)
 
-		ds, err = newBoltDataStore(conf.DatabasePath)
+	err := envconfig.Init(&conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	switch conf.DataStoreType {
+	case boltDataStoreType:
+		ds, err = newBoltDataStore(&conf.Bolt)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		defer ds.Close()
 
-		ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: conf.PersonalAccessToken})
-		tc := oauth2.NewClient(oauth2.NoContext, ts)
-
-		gh = github.NewClient(tc)
-	}
-
-	{
-		poller := poller{
-			ds:   ds,
-			gh:   gh,
-			freq: conf.PollFrequency,
+	case postgresDataStoreType:
+		ds, err = newPostgresDataStore(&conf.Postgres)
+		if err != nil {
+			log.Fatal(err)
 		}
-		go poller.run()
+		defer ds.Close()
 	}
 
-	{
-		handler := newHandler(ds)
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: conf.PersonalAccessToken})
+	tc := oauth2.NewClient(oauth2.NoContext, ts)
 
-		mux := http.NewServeMux()
-		mux.Handle("/hook", handler)
+	gh = github.NewClient(tc)
 
-		n := negroni.Classic()
-		n.UseFunc(makeBodyRewindable)
-		n.UseFunc(hookAuthentication)
-		n.UseFunc(eventTypeValidation)
-		n.UseHandler(mux)
-		n.Run(string(conf.Address.StringSlice()[0]))
+	poller := poller{
+		ds:   ds,
+		gh:   gh,
+		freq: conf.PollFrequency,
 	}
+	go poller.run()
+
+	handler := newHandler(ds)
+
+	mux := http.NewServeMux()
+	mux.Handle("/hook", handler)
+
+	n := negroni.Classic()
+	n.UseFunc(makeBodyRewindable)
+	n.UseFunc(hookAuthentication)
+	n.UseFunc(eventTypeValidation)
+	n.UseHandler(mux)
+	n.Run(string(conf.Address.StringSlice()[0]))
 }

@@ -1,0 +1,13 @@
+---
+- hosts: all
+  become: True
+  tasks:
+
+  - name: add the postgresql repository gpg key
+    apt_key: url="https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+
+  - name: add the postgresql repository
+    apt_repository: repo="deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main" state=present
+
+  - name: install postgresql
+    apt: name=postgresql-9.5 update_cache=yes state=latest

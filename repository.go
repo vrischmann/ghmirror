@@ -9,8 +9,8 @@ import (
 )
 
 type Repository struct {
-	Name      string
 	ID        int64
+	Name      string
 	LocalPath string
 	CloneURL  string
 	HookID    int64

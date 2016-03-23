@@ -17,5 +17,9 @@
     become_user: postgres
 
   - name: create the postgres ghmirror database
-    shell: psql -c "CREATE DATABASE ghmirror; GRANT ALL PRIVILEGES ON DATABASE ghmirror TO vagrant"
+    shell: psql -c "CREATE DATABASE ghmirror"
+    become_user: postgres
+
+  - name: grant privileges on ghmirror to vagrant
+    shell: psql -c "GRANT ALL PRIVILEGES ON DATABASE ghmirror TO vagrant"
     become_user: postgres

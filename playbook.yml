@@ -1,6 +1,6 @@
 ---
 - hosts: all
-  become: True
+  become: yes
   tasks:
 
   - name: add the postgresql repository gpg key
@@ -11,3 +11,11 @@
 
   - name: install postgresql
     apt: name=postgresql-9.5 update_cache=yes state=latest
+
+  - name: create the postgres vagrant role
+    shell: psql -c "CREATE USER vagrant WITH PASSWORD 'vagrant'"
+    become_user: postgres
+
+  - name: create the postgres ghmirror database
+    shell: psql -c "CREATE DATABASE ghmirror; GRANT ALL PRIVILEGES ON DATABASE ghmirror TO vagrant"
+    become_user: postgres

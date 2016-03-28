@@ -32,7 +32,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	poller.run()
+	go poller.run()
 
 	handler, err := newHandler(&conf)
 	if err != nil {

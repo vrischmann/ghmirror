@@ -12,19 +12,17 @@ type Postgres struct {
 	User     string
 	Password string
 	Dbname   string
+	SSLMode  string
 }
 
 type Config struct {
-	Address             flagutil.NetworkAddresses
+	ListenAddress       flagutil.NetworkAddresses
 	Secret              string
 	PersonalAccessToken string
 	PollFrequency       time.Duration
 	Webhook             struct {
-		Endpoint         string
-		ValidOwnerLogins []string
+		Endpoint string
 	}
-
 	RepositoriesPath string
-
-	Postgres Postgres
+	Postgres         Postgres
 }

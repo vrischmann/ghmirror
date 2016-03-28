@@ -66,30 +66,28 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var repo *internal.Repository
-	{
-		if !ok {
-			log.Printf("repository %d does not exist yet, adding it", hb.Repository.ID)
+	if !ok {
+		log.Printf("repository %d does not exist yet, adding it", hb.Repository.ID)
 
-			localPath := filepath.Join(conf.RepositoriesPath, hb.Repository.FullName)
-			repo = internal.NewRepository(
-				hb.Repository.ID,
-				hb.Repository.Name,
-				localPath,
-				hb.Repository.CloneURL,
-			)
+		localPath := filepath.Join(conf.RepositoriesPath, hb.Repository.FullName)
+		repo = internal.NewRepository(
+			hb.Repository.ID,
+			hb.Repository.Name,
+			localPath,
+			hb.Repository.CloneURL,
+		)
 
-			if err := h.rs.Add(repo); err != nil {
-				log.Printf("error while adding repository to the datastore. err=%v", err)
-				writeInternalServerError(w)
-				return
-			}
-		} else {
-			repo, err = h.rs.GetByID(hb.Repository.ID)
-			if err != nil {
-				log.Printf("error while getting repository from the datastore. err=%v", err)
-				writeInternalServerError(w)
-				return
-			}
+		if err := h.rs.Add(repo); err != nil {
+			log.Printf("error while adding repository to the datastore. err=%v", err)
+			writeInternalServerError(w)
+			return
+		}
+	} else {
+		repo, err = h.rs.GetByID(hb.Repository.ID)
+		if err != nil {
+			log.Printf("error while getting repository from the datastore. err=%v", err)
+			writeInternalServerError(w)
+			return
 		}
 	}
 

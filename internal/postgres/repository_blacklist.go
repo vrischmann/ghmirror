@@ -3,6 +3,8 @@ package postgres
 import (
 	"database/sql"
 
+	_ "github.com/lib/pq"
+
 	"github.com/vrischmann/ghmirror/internal"
 	"github.com/vrischmann/ghmirror/internal/config"
 	"github.com/vrischmann/ghmirror/internal/datastore"

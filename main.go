@@ -17,13 +17,16 @@ var (
 )
 
 func main() {
-	log.Printf("ghmirror %s-%s", version, commit)
-	log.Printf("config: %+v", conf)
-
 	err := envconfig.Init(&conf)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Printf("ghmirror %s-%s", version, commit)
+	log.Printf("listen address: %v", conf.ListenAddress)
+	log.Printf("postgres conf: %+v", conf.Postgres)
+
+	// TODO(vincent): maybe it's better to keep one sql.DB
 
 	poller, err := newPoller(&conf)
 	if err != nil {
@@ -46,5 +49,5 @@ func main() {
 	n.UseFunc(hookAuthentication)
 	n.UseFunc(eventTypeValidation)
 	n.UseHandler(mux)
-	n.Run(string(conf.Address.StringSlice()[0]))
+	n.Run(string(conf.ListenAddress.StringSlice()[0]))
 }

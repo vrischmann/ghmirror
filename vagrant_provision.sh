@@ -12,5 +12,5 @@ sudo -u postgres psql -c "CREATE DATABASE ghmirror"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ghmirror TO vagrant"
 
 sudo sed -i "s/#listen_addresses.*/listen_addresses = '*'/g" /etc/postgresql/9.5/main/postgresql.conf
-sudo sed -i '$s/$/\n\nhost all all samenet md5/' /etc/postgresql/9.5/main/pg_hba.conf
+sudo sed -i '$s/$/\n\nhost all all 0.0.0.0\/0 md5/' /etc/postgresql/9.5/main/pg_hba.conf
 sudo systemctl restart postgresql

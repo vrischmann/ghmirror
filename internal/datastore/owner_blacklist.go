@@ -1,13 +1,9 @@
 package datastore
 
-import (
-	"io"
-
-	"github.com/vrischmann/ghmirror/internal"
-)
+import "io"
 
 type OwnerBlacklist interface {
 	io.Closer
 
-	Get() (internal.OwnersBlacklist, error)
+	IsBlacklisted(name string) (bool, error)
 }

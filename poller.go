@@ -23,8 +23,7 @@ type poller struct {
 	obs datastore.OwnerBlacklist
 	rbs datastore.RepositoryBlacklist
 
-	gh   *github.Client
-	freq time.Duration
+	gh *github.Client
 }
 
 func newPoller(conf *config.Config) (*poller, error) {
@@ -55,7 +54,7 @@ func newPoller(conf *config.Config) (*poller, error) {
 }
 
 func (p *poller) run() {
-	ticker := time.NewTicker(p.freq)
+	ticker := time.NewTicker(p.conf.PollFrequency)
 
 	force := make(chan struct{}, 1)
 	force <- struct{}{}
@@ -120,57 +119,67 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 			cloneURL = *repo.SSHURL
 		}
 
-		ok, err := p.rs.Has(id)
+		ok, err := p.obs.IsBlacklisted(*repo.Owner.Login)
 		if err != nil {
-			return 0, 0, fmt.Errorf("error while checking for repository in the datastore. err=%v", err)
+			return 0, 0, fmt.Errorf("error while checking for blacklisted owners in the datastore. err=%v", err)
+		}
+
+		if ok {
+			log.Printf("ignoring repository %s because the owner is blacklisted", *repo.FullName)
+			continue
 		}
 
 		var r *internal.Repository
-		{
+
+		if ok, err = p.rs.Has(id); err != nil {
+			return 0, 0, fmt.Errorf("error while checking for repository in the datastore. err=%v", err)
+		}
+
+		switch {
+		case !ok:
 			// Let's add the new repository if it does not exist
-			if !ok {
-				log.Printf("repository %d does not exist yet, adding it", id)
+			log.Printf("repository %d does not exist yet, adding it", id)
 
-				localPath := filepath.Join(conf.RepositoriesPath, *repo.FullName)
-				r = internal.NewRepository(
-					id,
-					*repo.Name,
-					localPath,
-					cloneURL,
-				)
+			localPath := filepath.Join(conf.RepositoriesPath, *repo.FullName)
+			r = internal.NewRepository(
+				id,
+				*repo.Name,
+				localPath,
+				cloneURL,
+			)
 
-				if stringSliceContains(conf.Webhook.ValidOwnerLogins, *repo.Owner.Login) {
-					login := *repo.Owner.Login
+			login := *repo.Owner.Login
 
-					log.Printf("check the webhook exist")
+			log.Printf("check the webhook exist for %s", *repo.FullName)
 
-					ok, err := p.webHookExist(login, *repo.Name, p.gh)
-					if err != nil {
-						return 0, 0, fmt.Errorf("error while checking the webhook exist. err=%v", err)
-					}
+			ok, err := p.webHookExist(login, *repo.Name)
+			if err != nil {
+				return 0, 0, fmt.Errorf("error while checking the webhook exist. err=%v", err)
+			}
 
-					if !ok {
-						log.Printf("webhook does not exists for %d, %s", id, *repo.FullName)
-						log.Printf("creating webhook for repository %d, %s", id, *repo.FullName)
+			switch {
+			case !ok:
+				log.Printf("webhook does not exists for %d, %s", id, *repo.FullName)
+				log.Printf("creating webhook for repository %d, %s", id, *repo.FullName)
 
-						hookID, err := p.createWebHook(*repo.Owner.Login, *repo.Name, p.gh)
-						if err != nil {
-							return 0, 0, fmt.Errorf("error while creating webhook. err=%v", err)
-						}
-						r.HookID = hookID
-					} else {
-						log.Printf("webhook already exists for %d, %s", id, *repo.FullName)
-					}
-				}
-
-				if err := p.rs.Add(r); err != nil {
-					return 0, 0, fmt.Errorf("error while adding repository to the datastore. err=%v", err)
-				}
-			} else {
-				r, err = p.rs.GetByID(id)
+				hookID, err := p.createWebHook(*repo.Owner.Login, *repo.Name, p.gh)
 				if err != nil {
-					return 0, 0, fmt.Errorf("error while getting repository from the datastore. err=%v", err)
+					return 0, 0, fmt.Errorf("error while creating webhook. err=%v", err)
 				}
+				r.HookID = hookID
+
+			default:
+				log.Printf("webhook already exists for %d, %s", id, *repo.FullName)
+			}
+
+			if err := p.rs.Add(r); err != nil {
+				return 0, 0, fmt.Errorf("error while adding repository to the datastore. err=%v", err)
+			}
+
+		default:
+			r, err = p.rs.GetByID(id)
+			if err != nil {
+				return 0, 0, fmt.Errorf("error while getting repository from the datastore. err=%v", err)
 			}
 		}
 
@@ -189,8 +198,8 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 	return count, nextPage, nil
 }
 
-func (p *poller) webHookExist(owner, repo string, gh *github.Client) (bool, error) {
-	hooks, _, err := gh.Repositories.ListHooks(owner, repo, nil)
+func (p *poller) webHookExist(owner, repo string) (bool, error) {
+	hooks, _, err := p.gh.Repositories.ListHooks(owner, repo, nil)
 	if err != nil {
 		return false, err
 	}

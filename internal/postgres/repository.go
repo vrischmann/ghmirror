@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/vrischmann/ghmirror/internal"
 	"github.com/vrischmann/ghmirror/internal/config"
@@ -14,13 +13,12 @@ type repositoryStore struct {
 }
 
 func NewRepositoryStore(conf *config.Postgres) (datastore.Repository, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=verify-full", conf.Host, conf.Port, conf.User, conf.Dbname)
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		return nil, err
-	}
+	s := new(repositoryStore)
 
-	return &repositoryStore{db: db}, nil
+	var err error
+	s.db, err = makeDB(conf)
+
+	return s, err
 }
 
 func (s *repositoryStore) Close() error { return s.db.Close() }
@@ -69,7 +67,7 @@ func (s *repositoryStore) GetByID(id int64) (*internal.Repository, error) {
 		hookID                    int64
 	)
 
-	err := s.db.QueryRow(q).Scan(&name, &localPath, &cloneURL, &hookID)
+	err := s.db.QueryRow(q, id).Scan(&name, &localPath, &cloneURL, &hookID)
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, nil
@@ -97,9 +95,18 @@ func (s *repositoryStore) Add(repo *internal.Repository) error {
 	const q = `INSERT INTO repository(name, local_path, clone_url, hook_id)
                VALUES ($1, $2, $3, $4)`
 
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
 	// TODO(vincent): do we need the last inserted id for something ?
-	_, err := s.db.Exec(q, repo.Name, repo.LocalPath, repo.CloneURL, repo.HookID)
-	return err
+	_, err = tx.Exec(q, repo.Name, repo.LocalPath, repo.CloneURL, repo.HookID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 var _ datastore.Repository = (*repositoryStore)(nil)

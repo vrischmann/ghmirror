@@ -26,5 +26,5 @@ type Config struct {
 
 	RepositoriesPath string
 
-	Postgres Postgres `envconfig:"optional"`
+	Postgres Postgres
 }

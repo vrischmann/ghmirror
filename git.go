@@ -21,7 +21,21 @@ func gitClone(url, dest string) error {
 func gitPull(dir string) error {
 	var buf bytes.Buffer
 
-	err := runGitCommand(nil, &buf, dir, "checkout", "master")
+	err := runGitCommand(nil, &buf, dir, "fetch", "--all")
+	if err != nil {
+		return fmt.Errorf(`running command "git fetch --all", err=%v`, buf.String())
+	}
+
+	buf.Reset()
+
+	err = runGitCommand(nil, &buf, dir, "fetch", "-p")
+	if err != nil {
+		return fmt.Errorf(`running command "git fetch -p", err=%v`, buf.String())
+	}
+
+	buf.Reset()
+
+	err = runGitCommand(nil, &buf, dir, "checkout", "master")
 	if err != nil {
 		return fmt.Errorf(`running command "git checkout master", err=%v`, buf.String())
 	}

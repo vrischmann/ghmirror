@@ -1,0 +1,53 @@
+{
+	"ImportPath": "github.com/vrischmann/ghmirror",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v60",
+	"Packages": [
+		"github.com/vrischmann/ghmirror/..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/codegangsta/negroni",
+			"Comment": "v0.1-70-gc7477ad",
+			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
+		},
+		{
+			"ImportPath": "github.com/google/go-github/github",
+			"Rev": "0c9db7098d0629b3ae09c073ea0c0821c8ee5386"
+		},
+		{
+			"ImportPath": "github.com/google/go-querystring/query",
+			"Rev": "6bb77fe6f42b85397288d4f6f67ac72f8f400ee7"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-84-g3cd0097",
+			"Rev": "3cd0097429be7d611bb644ef85b42bfb102ceea4"
+		},
+		{
+			"ImportPath": "github.com/lib/pq/oid",
+			"Comment": "go1.0-cutoff-84-g3cd0097",
+			"Rev": "3cd0097429be7d611bb644ef85b42bfb102ceea4"
+		},
+		{
+			"ImportPath": "github.com/vrischmann/envconfig",
+			"Rev": "f8d392b1c03126ca4489a873e8ea8284ac7435f3"
+		},
+		{
+			"ImportPath": "github.com/vrischmann/flagutil",
+			"Rev": "8ff7d4e984dd75dbe4d959f45df52b783212246d"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "66f0418ca41253f8d1a024eb9754e9441a8e79b9"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "33fa30fe45020622640e947917fd1fc4c81e3dce"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/internal",
+			"Rev": "33fa30fe45020622640e947917fd1fc4c81e3dce"
+		}
+	]
+}

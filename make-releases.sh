@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export GO15VENDOREXPERIMENT=1
-
 gox --ldflags="-X main.commit=$(git rev-parse HEAD) -X main.version=$(cat VERSION)" \
     --os="linux windows darwing openbsd freebsd" \
     --arch="386 amd64" \

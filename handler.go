@@ -2,18 +2,47 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"path/filepath"
+
+	"github.com/vrischmann/ghmirror/internal"
+	"github.com/vrischmann/ghmirror/internal/config"
+	"github.com/vrischmann/ghmirror/internal/datastore"
+	"github.com/vrischmann/ghmirror/internal/postgres"
 )
 
 type handler struct {
-	ds DataStore
+	conf *config.Config
+
+	rs  datastore.Repository
+	obs datastore.OwnerBlacklist
+	rbs datastore.RepositoryBlacklist
 }
 
-func newHandler(ds DataStore) *handler {
-	return &handler{ds: ds}
+func newHandler(conf *config.Config) (*handler, error) {
+	h := &handler{conf: conf}
+
+	var err error
+
+	h.rs, err = postgres.NewRepositoryStore(&conf.Postgres)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create repository store. err=%v", err)
+	}
+
+	h.obs, err = postgres.NewOwnerBlacklistStore(&conf.Postgres)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create owner blacklist store. err=%v", err)
+	}
+
+	h.rbs, err = postgres.NewRepositoryBlacklistStore(&conf.Postgres)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create repository blacklist store. err=%v", err)
+	}
+
+	return h, nil
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -27,37 +56,35 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Obtain the datastore lock
-	h.ds.Lock()
-	defer h.ds.Unlock()
+	// TODO(vincent): transactions
 
-	ok, err := h.ds.HasRepository(hb.Repository.ID)
+	ok, err := h.rs.Has(hb.Repository.ID)
 	if err != nil {
 		log.Printf("error while checking for repository in the datastore. err=%v", err)
 		writeInternalServerError(w)
 		return
 	}
 
-	var repo *Repository
+	var repo *internal.Repository
 	{
 		if !ok {
 			log.Printf("repository %d does not exist yet, adding it", hb.Repository.ID)
 
 			localPath := filepath.Join(conf.RepositoriesPath, hb.Repository.FullName)
-			repo = NewRepository(
+			repo = internal.NewRepository(
 				hb.Repository.ID,
 				hb.Repository.Name,
 				localPath,
 				hb.Repository.CloneURL,
 			)
 
-			if err := h.ds.AddRepository(repo); err != nil {
+			if err := h.rs.Add(repo); err != nil {
 				log.Printf("error while adding repository to the datastore. err=%v", err)
 				writeInternalServerError(w)
 				return
 			}
 		} else {
-			repo, err = h.ds.GetByID(hb.Repository.ID)
+			repo, err = h.rs.GetByID(hb.Repository.ID)
 			if err != nil {
 				log.Printf("error while getting repository from the datastore. err=%v", err)
 				writeInternalServerError(w)
@@ -68,7 +95,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("updating repo %d, %s", repo.ID, hb.Repository.FullName)
 
-	if err := repo.Update(); err != nil {
+	if err := UpdateRepository(repo); err != nil {
 		log.Printf("error while cloning repository. err=%v", err)
 		writeInternalServerError(w)
 		return

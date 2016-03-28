@@ -1,40 +1,32 @@
-package main
+package postgres
 
 import (
 	"database/sql"
 	"fmt"
-	"sync"
+
+	"github.com/vrischmann/ghmirror/internal"
+	"github.com/vrischmann/ghmirror/internal/config"
+	"github.com/vrischmann/ghmirror/internal/datastore"
 )
 
-type postgresDataStore struct {
+type repositoryStore struct {
 	db *sql.DB
-	mu sync.Mutex
 }
 
-func newPostgresDataStore(conf *postgresConf) (DataStore, error) {
+func NewRepositoryStore(conf *config.Postgres) (datastore.Repository, error) {
 	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=verify-full", conf.Host, conf.Port, conf.User, conf.Dbname)
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	return &postgresDataStore{db: db}, nil
+	return &repositoryStore{db: db}, nil
 }
 
-func (s *postgresDataStore) Close() error {
-	return s.db.Close()
-}
+func (s *repositoryStore) Close() error { return s.db.Close() }
 
-func (s *postgresDataStore) Lock() {
-	s.mu.Lock()
-}
-
-func (s *postgresDataStore) Unlock() {
-	s.mu.Unlock()
-}
-
-func (s *postgresDataStore) Repositories() (Repositories, error) {
-	var res Repositories
+func (s *repositoryStore) GetAll() (internal.Repositories, error) {
+	var res internal.Repositories
 
 	const q = `SELECT id, name, local_path, clone_url, hook_id FROM repository`
 
@@ -54,7 +46,7 @@ func (s *postgresDataStore) Repositories() (Repositories, error) {
 			return nil, err
 		}
 
-		repo := &Repository{
+		repo := &internal.Repository{
 			ID:        id,
 			Name:      name,
 			LocalPath: localPath,
@@ -68,7 +60,7 @@ func (s *postgresDataStore) Repositories() (Repositories, error) {
 	return res, nil
 }
 
-func (s *postgresDataStore) GetByID(id int64) (*Repository, error) {
+func (s *repositoryStore) GetByID(id int64) (*internal.Repository, error) {
 	const q = `SELECT name, local_path, clone_url, hook_id FROM repository
                WHERE id = $1`
 
@@ -85,7 +77,7 @@ func (s *postgresDataStore) GetByID(id int64) (*Repository, error) {
 		return nil, err
 	}
 
-	repo := &Repository{
+	repo := &internal.Repository{
 		ID:        id,
 		Name:      name,
 		LocalPath: localPath,
@@ -96,12 +88,12 @@ func (s *postgresDataStore) GetByID(id int64) (*Repository, error) {
 	return repo, nil
 }
 
-func (s *postgresDataStore) HasRepository(id int64) (bool, error) {
+func (s *repositoryStore) Has(id int64) (bool, error) {
 	repo, err := s.GetByID(id)
 	return repo != nil, err
 }
 
-func (s *postgresDataStore) AddRepository(repo *Repository) error {
+func (s *repositoryStore) Add(repo *internal.Repository) error {
 	const q = `INSERT INTO repository(name, local_path, clone_url, hook_id)
                VALUES ($1, $2, $3, $4)`
 
@@ -109,3 +101,5 @@ func (s *postgresDataStore) AddRepository(repo *Repository) error {
 	_, err := s.db.Exec(q, repo.Name, repo.LocalPath, repo.CloneURL, repo.HookID)
 	return err
 }
+
+var _ datastore.Repository = (*repositoryStore)(nil)

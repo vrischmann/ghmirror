@@ -6,14 +6,52 @@ import (
 	"path/filepath"
 	"time"
 
+	"golang.org/x/oauth2"
+
 	"github.com/google/go-github/github"
+	"github.com/vrischmann/ghmirror/internal"
+	"github.com/vrischmann/ghmirror/internal/config"
+	"github.com/vrischmann/ghmirror/internal/datastore"
+	"github.com/vrischmann/ghmirror/internal/postgres"
 )
 
 // poller poll regularly the GitHub API for new repositories
 type poller struct {
-	ds   DataStore
+	conf *config.Config
+
+	rs  datastore.Repository
+	obs datastore.OwnerBlacklist
+	rbs datastore.RepositoryBlacklist
+
 	gh   *github.Client
 	freq time.Duration
+}
+
+func newPoller(conf *config.Config) (*poller, error) {
+	p := &poller{conf: conf}
+
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: conf.PersonalAccessToken})
+	tc := oauth2.NewClient(oauth2.NoContext, ts)
+	p.gh = github.NewClient(tc)
+
+	var err error
+
+	p.rs, err = postgres.NewRepositoryStore(&conf.Postgres)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create repository store. err=%v", err)
+	}
+
+	p.obs, err = postgres.NewOwnerBlacklistStore(&conf.Postgres)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create owner blacklist store. err=%v", err)
+	}
+
+	p.rbs, err = postgres.NewRepositoryBlacklistStore(&conf.Postgres)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create repository blacklist store. err=%v", err)
+	}
+
+	return p, nil
 }
 
 func (p *poller) run() {
@@ -62,9 +100,7 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 		return 0, 0, fmt.Errorf("unable to get user repositories. err=%v", err)
 	}
 
-	// Obtain the datastore lock
-	p.ds.Lock()
-	defer p.ds.Unlock()
+	// TODO(vincent): transactions !
 
 	log.Printf("got %d repositories for page %d", len(repos), page)
 
@@ -84,19 +120,19 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 			cloneURL = *repo.SSHURL
 		}
 
-		ok, err := p.ds.HasRepository(id)
+		ok, err := p.rs.Has(id)
 		if err != nil {
 			return 0, 0, fmt.Errorf("error while checking for repository in the datastore. err=%v", err)
 		}
 
-		var r *Repository
+		var r *internal.Repository
 		{
 			// Let's add the new repository if it does not exist
 			if !ok {
 				log.Printf("repository %d does not exist yet, adding it", id)
 
 				localPath := filepath.Join(conf.RepositoriesPath, *repo.FullName)
-				r = NewRepository(
+				r = internal.NewRepository(
 					id,
 					*repo.Name,
 					localPath,
@@ -127,11 +163,11 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 					}
 				}
 
-				if err := p.ds.AddRepository(r); err != nil {
+				if err := p.rs.Add(r); err != nil {
 					return 0, 0, fmt.Errorf("error while adding repository to the datastore. err=%v", err)
 				}
 			} else {
-				r, err = p.ds.GetByID(id)
+				r, err = p.rs.GetByID(id)
 				if err != nil {
 					return 0, 0, fmt.Errorf("error while getting repository from the datastore. err=%v", err)
 				}
@@ -140,7 +176,7 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 
 		log.Printf("updating repo %d, %s", r.ID, *repo.FullName)
 
-		if err := r.Update(); err != nil {
+		if err := UpdateRepository(r); err != nil {
 			log.Printf("error while updating repository %d, %s. err=%v", r.ID, *repo.FullName, err)
 			continue
 		}

@@ -2,12 +2,17 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+)
+
+var (
+	flLinux = flag.Bool("linux", false, "Build with GOOS=linux")
 )
 
 func getVersion() (string, error) {
@@ -35,17 +40,41 @@ func getCommit() (string, error) {
 	return strings.TrimSpace(buf.String()), nil
 }
 
+func getEnv() []string {
+	env := os.Environ()
+
+	// TODO(vincent): make this generic somehow
+	if !(*flLinux) {
+		return env
+	}
+
+	goosPos := 0
+	for i, el := range env {
+		if strings.HasPrefix(el, "GOOS=") {
+			goosPos = i
+		}
+	}
+
+	env = append(env[:goosPos], env[goosPos+1:]...)
+	env = append(env, "GOOS=linux")
+
+	return env
+}
+
 func goBuild(output, ldflags string) error {
 	cmd := exec.Command("go", "build", "--ldflags", ldflags, "-o", output)
 	cmd.Dir = "cmd"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = getEnv()
 
 	return cmd.Run()
 }
 
 func main() {
+	flag.Parse()
+
 	musts := func(s string, err error) string {
 		if err != nil {
 			log.Fatal(err)

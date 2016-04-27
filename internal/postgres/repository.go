@@ -92,8 +92,8 @@ func (s *repositoryStore) Has(id int64) (bool, error) {
 }
 
 func (s *repositoryStore) Add(repo *internal.Repository) error {
-	const q = `INSERT INTO repository(name, local_path, clone_url, hook_id)
-               VALUES ($1, $2, $3, $4)`
+	const q = `INSERT INTO repository(id, name, local_path, clone_url, hook_id)
+               VALUES ($1, $2, $3, $4, $5)`
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -101,7 +101,7 @@ func (s *repositoryStore) Add(repo *internal.Repository) error {
 	}
 
 	// TODO(vincent): do we need the last inserted id for something ?
-	_, err = tx.Exec(q, repo.Name, repo.LocalPath, repo.CloneURL, repo.HookID)
+	_, err = tx.Exec(q, repo.ID, repo.Name, repo.LocalPath, repo.CloneURL, repo.HookID)
 	if err != nil {
 		return err
 	}

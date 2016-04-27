@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS repository(
-    id bigserial primary key,
+    id bigint primary key,
     name varchar,
     local_path varchar,
     clone_url varchar,

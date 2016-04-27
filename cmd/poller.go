@@ -152,7 +152,7 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 
 			log.Printf("check the webhook exist for %s", *repo.FullName)
 
-			ok, err := p.webHookExist(login, *repo.Name)
+			ok, hookID, err := p.webHookExist(login, *repo.Name)
 			if err != nil {
 				return 0, 0, fmt.Errorf("error while checking the webhook exist. err=%v", err)
 			}
@@ -162,15 +162,16 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 				log.Printf("webhook does not exists for %d, %s", id, *repo.FullName)
 				log.Printf("creating webhook for repository %d, %s", id, *repo.FullName)
 
-				hookID, err := p.createWebHook(*repo.Owner.Login, *repo.Name, p.gh)
+				hookID, err = p.createWebHook(*repo.Owner.Login, *repo.Name, p.gh)
 				if err != nil {
 					return 0, 0, fmt.Errorf("error while creating webhook. err=%v", err)
 				}
-				r.HookID = hookID
 
 			default:
 				log.Printf("webhook already exists for %d, %s", id, *repo.FullName)
 			}
+
+			r.HookID = int64(hookID)
 
 			if err := p.rs.Add(r); err != nil {
 				return 0, 0, fmt.Errorf("error while adding repository to the datastore. err=%v", err)
@@ -198,13 +199,14 @@ func (p *poller) updateRepositoriesForPage(page int) (int, int, error) {
 	return count, nextPage, nil
 }
 
-func (p *poller) webHookExist(owner, repo string) (bool, error) {
+func (p *poller) webHookExist(owner, repo string) (bool, int, error) {
 	hooks, _, err := p.gh.Repositories.ListHooks(owner, repo, nil)
 	if err != nil {
-		return false, err
+		return false, 0, err
 	}
 
 	exist := false
+	id := 0
 	for _, hook := range hooks {
 		v, ok := hook.Config["url"]
 		if !ok {
@@ -218,13 +220,14 @@ func (p *poller) webHookExist(owner, repo string) (bool, error) {
 
 		if v2 == conf.Webhook.Endpoint {
 			exist = true
+			id = *hook.ID
 		}
 	}
 
-	return exist, nil
+	return exist, id, nil
 }
 
-func (p *poller) createWebHook(owner, repo string, gh *github.Client) (int64, error) {
+func (p *poller) createWebHook(owner, repo string, gh *github.Client) (int, error) {
 	name := "web"
 	active := true
 
@@ -244,7 +247,7 @@ func (p *poller) createWebHook(owner, repo string, gh *github.Client) (int64, er
 		return -1, err
 	}
 
-	return int64(*hook.ID), nil
+	return *hook.ID, nil
 }
 
 func stringSliceContains(sl []string, s string) bool {

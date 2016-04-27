@@ -1,4 +1,5 @@
 /ghmirror_linux_amd64
+/cmd/ghmirror
 /gin-bin
 /ghmirror
 /deploy.sh

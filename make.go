@@ -1,3 +1,5 @@
+// +build makefile
+
 package main
 
 import (
@@ -9,6 +11,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
+
+	"git.vrischmann.me/bstats/pkg"
 )
 
 var (
@@ -72,7 +77,21 @@ func goBuild(output, ldflags string) error {
 	return cmd.Run()
 }
 
+func check(err error) {
+	if err != nil {
+		log.Printf("check failed: %v", err)
+		failed = true
+	}
+}
+
+var failed bool
+
+const bstatsFile = "ghmirror.bst"
+
 func main() {
+	now := time.Now()
+	check(bstats.Begin(bstatsFile))
+
 	flag.Parse()
 
 	musts := func(s string, err error) string {
@@ -83,15 +102,21 @@ func main() {
 		return s
 	}
 
-	check := func(err error) {
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	commit := musts(getCommit())
 	version := musts(getVersion())
 	ldflags := fmt.Sprintf("-X main.commit=%s -X main.version=%s", commit, version)
 
 	check(goBuild("ghmirror", ldflags))
+
+	var statusCode int
+	if failed {
+		statusCode = 1
+	}
+
+	check(bstats.End(bstatsFile, statusCode))
+
+	elapsed := time.Since(now)
+	log.Printf("build time: %s", elapsed)
+
+	os.Exit(statusCode)
 }

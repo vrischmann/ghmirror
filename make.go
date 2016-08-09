@@ -10,14 +10,14 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
-	"git.vrischmann.me/bstats/pkg"
-)
+	"github.com/vrischmann/flagutil"
+	"github.com/vrischmann/gomaker"
 
-var (
-	flLinux = flag.Bool("linux", false, "Build with GOOS=linux")
+	"git.vrischmann.me/bstats/pkg"
 )
 
 func getVersion() (string, error) {
@@ -45,75 +45,74 @@ func getCommit() (string, error) {
 	return strings.TrimSpace(buf.String()), nil
 }
 
-func getEnv() []string {
-	env := os.Environ()
-
-	// TODO(vincent): make this generic somehow
-	if !(*flLinux) {
-		return env
-	}
-
-	goosPos := 0
-	for i, el := range env {
-		if strings.HasPrefix(el, "GOOS=") {
-			goosPos = i
-		}
-	}
-
-	env = append(env[:goosPos], env[goosPos+1:]...)
-	env = append(env, "GOOS=linux")
-
-	return env
-}
-
-func goBuild(output, ldflags string) error {
-	cmd := exec.Command("go", "build", "--ldflags", ldflags, "-o", output)
-	cmd.Dir = "cmd"
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Env = getEnv()
-
-	return cmd.Run()
-}
-
-func check(err error) {
+func musts(s string, err error) string {
 	if err != nil {
-		log.Printf("check failed: %v", err)
-		failed = true
+		log.Fatal(err)
 	}
-}
 
-var failed bool
+	return s
+}
 
 const bstatsFile = "ghmirror.bst"
 
+var (
+	failed bool
+
+	flOS   flagutil.Strings
+	flArch flagutil.Strings
+)
+
+func init() {
+	flag.Var(&flOS, "os", "List of GOOS values")
+	flag.Var(&flArch, "arch", "List of GOARCH values")
+}
+
 func main() {
 	now := time.Now()
-	check(bstats.Begin(bstatsFile))
+	if err := bstats.Begin(bstatsFile); err != nil {
+		log.Fatal(err)
+	}
 
 	flag.Parse()
 
-	musts := func(s string, err error) string {
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		return s
+	if len(flOS) == 0 {
+		flOS = flagutil.Strings{runtime.GOOS}
+	}
+	if len(flArch) == 0 {
+		flArch = flagutil.Strings{runtime.GOARCH}
 	}
 
 	commit := musts(getCommit())
 	version := musts(getVersion())
 	ldflags := fmt.Sprintf("-X main.commit=%s -X main.version=%s", commit, version)
 
-	check(goBuild("ghmirror", ldflags))
+	for _, os := range flOS {
+		for _, arch := range flArch {
+			now2 := time.Now()
+
+			err := gomaker.Build(gomaker.BuildParams{
+				OS:      os,
+				Arch:    arch,
+				Output:  "ghmirror_" + os + "_" + arch,
+				Dir:     "cmd",
+				LDFlags: ldflags,
+			})
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			log.Printf("built for %s_%s in %s", os, arch, time.Since(now2))
+		}
+	}
 
 	var statusCode int
 	if failed {
 		statusCode = 1
 	}
 
-	check(bstats.End(bstatsFile, statusCode))
+	if err := bstats.End(bstatsFile, statusCode); err != nil {
+		log.Fatal(err)
+	}
 
 	elapsed := time.Since(now)
 	log.Printf("build time: %s", elapsed)

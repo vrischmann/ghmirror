@@ -1,4 +1,4 @@
-/ghmirror_linux_amd64
+/cmd/ghmirror_*
 /cmd/ghmirror
 /gin-bin
 /ghmirror

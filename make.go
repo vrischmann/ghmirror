@@ -16,8 +16,6 @@ import (
 
 	"github.com/vrischmann/flagutil"
 	"github.com/vrischmann/gomaker"
-
-	"git.vrischmann.me/bstats/pkg"
 )
 
 func getVersion() (string, error) {
@@ -53,8 +51,6 @@ func musts(s string, err error) string {
 	return s
 }
 
-const bstatsFile = "ghmirror.bst"
-
 var (
 	failed bool
 
@@ -68,12 +64,9 @@ func init() {
 }
 
 func main() {
-	now := time.Now()
-	if err := bstats.Begin(bstatsFile); err != nil {
-		log.Fatal(err)
-	}
-
 	flag.Parse()
+
+	now := time.Now()
 
 	if len(flOS) == 0 {
 		flOS = flagutil.Strings{runtime.GOOS}
@@ -105,17 +98,6 @@ func main() {
 		}
 	}
 
-	var statusCode int
-	if failed {
-		statusCode = 1
-	}
-
-	if err := bstats.End(bstatsFile, statusCode); err != nil {
-		log.Fatal(err)
-	}
-
 	elapsed := time.Since(now)
 	log.Printf("build time: %s", elapsed)
-
-	os.Exit(statusCode)
 }
